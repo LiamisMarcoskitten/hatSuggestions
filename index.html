@@ -1,59 +1,188 @@
-<div>Teachable Machine Image Model</div>
-<button type="button" onclick="init()">Start</button>
-<div id="webcam-container"></div>
-<div id="label-container"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HatVision — AI Hat Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background: #0f0f0f;
+            color: white;
+        }
+
+        header {
+            background: #1a1a1a;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: 600;
+            border-bottom: 1px solid #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: auto;
+            padding-top: 30px;
+        }
+
+        .section {
+            background: #161616;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border: 1px solid #2a2a2a;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        button {
+            background: #0066ff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            background: #0052cc;
+        }
+
+        #webcam-container {
+            margin-top: 15px;
+        }
+
+        #label-container > div {
+            background: #111;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+
+        .suggestion-box {
+            background: #121212;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<header>HatVision — AI Hat Style Detector</header>
+
+<div class="container">
+
+    <!-- What the project does -->
+    <div class="section">
+        <h2>About the Project</h2>
+        <p>
+            HatVision uses a Teachable Machine model to analyze your hat in real time. 
+            It detects what type of hat you're wearing — such as a baseball cap, bucket hat, cowboy hat, fedora, or beanie — 
+            and then suggests similar styles that you might like.
+        </p>
+        <p>
+            This tool is useful for shoppers, fashion enthusiasts, and online stores looking to provide 
+            personalized accessory recommendations.
+        </p>
+    </div>
+
+    <!-- Instructions -->
+    <div class="section">
+        <h2>How to Use</h2>
+        <ul>
+            <li>Click <b>Start</b> to enable your webcam.</li>
+            <li>Look at the camera while wearing a hat OR with no hat.</li>
+            <li>The AI will classify your hat and recommend similar styles.</li>
+        </ul>
+        <button onclick="init()">Start</button>
+        <div id="webcam-container"></div>
+        <div id="label-container"></div>
+
+        <div id="suggestions" class="suggestion-box">
+            <h3>Hat Suggestions Will Appear Here</h3>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-<script type="text/javascript">
-    // More API functions here:
-    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
 
-    // the link to your model provided by Teachable Machine export panel
+<script>
     const URL = "./my_model/";
-
     let model, webcam, labelContainer, maxPredictions;
 
-    // Load the image model and setup the webcam
+    const hatSuggestions = {
+        "baseball caps": "You seem to like casual sporty styles. You might also enjoy snapbacks, curved-brim streetwear caps, or athletic performance hats.",
+        "Bucket hat": "Bucket hats are great for sun protection and style. You might also like fisherman hats or wide-brim summer hats.",
+        "Cowboy hat": "Classic Western look! You may also enjoy rancher hats, outback hats, or Western-style fedoras.",
+        "Fedora": "A stylish choice! Similar options include trilby hats, pork pie hats, or wide-brim dress hats.",
+        "Beanies": "Cozy and casual! You might also like cuffed beanies, slouch beanies, or knit skull caps.",
+        "no hat": "You're not wearing a hat — try putting one on to get style recommendations!"
+    };
+
     async function init() {
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
-        // load the model and metadata
-        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
-        // or files from your local hard drive
-        // Note: the pose library adds "tmImage" object to your window (window.tmImage)
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        // Convenience function to setup a webcam
-        const flip = true; // whether to flip the webcam
-        webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-        await webcam.setup(); // request access to the webcam
+        webcam = new tmImage.Webcam(200, 200, true);
+        await webcam.setup();
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // append elements to the DOM
         document.getElementById("webcam-container").appendChild(webcam.canvas);
+
         labelContainer = document.getElementById("label-container");
-        for (let i = 0; i < maxPredictions; i++) { // and class labels
+        for (let i = 0; i < maxPredictions; i++) {
             labelContainer.appendChild(document.createElement("div"));
         }
     }
 
     async function loop() {
-        webcam.update(); // update the webcam frame
+        webcam.update();
         await predict();
         window.requestAnimationFrame(loop);
     }
 
-    // run the webcam image through the image model
     async function predict() {
-        // predict can take in an image, video or canvas html element
-        const prediction = await model.predict(webcam.canvas);
+        const predictions = await model.predict(webcam.canvas);
+        
+        let bestClass = null;
+        let bestProb = 0;
+
         for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction =
-                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            labelContainer.childNodes[i].innerHTML = classPrediction;
+            const p = predictions[i];
+            labelContainer.childNodes[i].innerHTML = `${p.className}: ${p.probability.toFixed(2)}`;
+
+            if (p.probability > bestProb) {
+                bestProb = p.probability;
+                bestClass = p.className;
+            }
         }
+
+        // Show suggestions
+        document.getElementById("suggestions").innerHTML =
+            "<h3>Suggestions</h3><p>" + hatSuggestions[bestClass] + "</p>";
     }
 </script>
+
+</body>
+</html>
