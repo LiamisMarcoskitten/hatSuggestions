@@ -2,20 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StreetFit AI — Hat Style Scanner</title>
+    <title>StreetFit AI — Hat Scanner</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
     <style>
         body {
             margin: 0;
             font-family: 'Poppins', sans-serif;
-            background: #0d0d0d;
+            background: #0b0b0b;
             color: #ffffff;
         }
 
         header {
-            padding: 20px;
             text-align: center;
+            padding: 20px;
             font-size: 32px;
             font-weight: 600;
             background: #111;
@@ -30,8 +31,8 @@
 
         .card {
             background: #151515;
-            border: 1px solid #2a2a2a;
             border-radius: 14px;
+            border: 1px solid #2a2a2a;
             padding: 20px;
             margin-bottom: 25px;
         }
@@ -68,10 +69,10 @@
             font-size: 14px;
         }
 
-        #suggestions {
+        #result {
             margin-top: 20px;
-            background: #101010;
             padding: 15px;
+            background: #101010;
             border-radius: 10px;
             border: 1px solid #333;
         }
@@ -93,15 +94,15 @@
 
     <!-- PROJECT EXPLANATION -->
     <div class="card">
-        <h2>What Problem Does This Solve?</h2>
+        <h2>What Is This Project?</h2>
         <p>
-            Many people struggle to find hats that match their personal style when shopping online.
-            StreetFit AI solves this by instantly recognizing the type of hat you're wearing and
-            recommending similar styles you might like.
+            Many online shoppers struggle to find hats that match their personal style.
+            StreetFit AI uses a Teachable Machine image model to detect the type of hat a person is wearing
+            and suggest similar styles.
         </p>
         <p>
-            This tool is useful for streetwear fans, online shoppers, and fashion brands looking
-            to offer personalized shopping experiences.
+            This project benefits fashion shoppers, streetwear fans, and online stores looking
+            to create personalized shopping experiences.
         </p>
     </div>
 
@@ -109,9 +110,9 @@
     <div class="card">
         <h2>How to Use</h2>
         <ol>
-            <li>Click the <strong>Start</strong> button to enable your webcam.</li>
+            <li>Click <strong>Start</strong> to enable your webcam.</li>
             <li>Wear a hat (or no hat) and face the camera.</li>
-            <li>The AI will detect your hat type and suggest similar styles.</li>
+            <li>The AI will detect your hat if confidence is high enough.</li>
         </ol>
 
         <button onclick="init()">Start</button>
@@ -119,31 +120,23 @@
         <div id="webcam-container"></div>
         <div id="label-container"></div>
 
-        <div id="suggestions">
-            <h3>Style Suggestions</h3>
-            <p>Your recommendations will appear here.</p>
+        <div id="result">
+            <h3>Detection Result</h3>
+            <p>Waiting for camera...</p>
         </div>
     </div>
 
 </div>
 
-<footer>© 2025 StreetFit AI — Smart Style Meets Streetwear</footer>
+<footer>© 2025 StreetFit AI</footer>
 
-<!-- SCRIPTS -->
+<!-- ML LIBRARIES -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script>
     const URL = "./my_model/";
     let model, webcam, labelContainer, maxPredictions;
-
-    const suggestionsMap = {
-        "baseball cap": "You’re rocking a classic streetwear look. You might also like snapbacks, logo caps, or flat-brim urban hats.",
-        "beanie": "Clean and casual. Try cuffed beanies, oversized knit beanies, or minimalist winter styles.",
-        "cowboy hat": "Bold choice. You may also like western-inspired hats or wide-brim statement pieces.",
-        "bucket hat": "Trendy and relaxed. Similar styles include fisherman hats and lightweight summer street hats.",
-        "no hat": "No hat detected. Throw one on to unlock streetwear-inspired recommendations!"
-    };
 
     async function init() {
         const modelURL = URL + "model.json";
@@ -152,7 +145,7 @@
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        webcam = new tmImage.Webcam(200, 200, true);
+        webcam = new tmImage.Webcam(300, 300, true);
         await webcam.setup();
         await webcam.play();
         window.requestAnimationFrame(loop);
@@ -189,10 +182,19 @@
             }
         }
 
-        document.getElementById("suggestions").innerHTML = `
-            <h3>Style Suggestions</h3>
-            <p>${suggestionsMap[bestClass] || "Try adjusting your position or lighting."}</p>
-        `;
+        const resultBox = document.getElementById("result");
+
+        if (bestProb >= 0.6) {
+            resultBox.innerHTML = `
+                <h3>Detection Result</h3>
+                <p><strong>This is a ${bestClass}.</strong></p>
+            `;
+        } else {
+            resultBox.innerHTML = `
+                <h3>Detection Result</h3>
+                <p>Not confident yet. Try better lighting or move closer.</p>
+            `;
+        }
     }
 </script>
 
