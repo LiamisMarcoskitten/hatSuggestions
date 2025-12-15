@@ -96,13 +96,13 @@
     <div class="card">
         <h2>What Is This Project?</h2>
         <p>
-            Many online shoppers struggle to find hats that match their personal style.
-            StreetFit AI uses a Teachable Machine image model to detect the type of hat a person is wearing
-            and suggest similar styles.
+            Many people struggle to find hats that match their style when shopping online.
+            StreetFit AI uses a Teachable Machine image model to scan what type of hat a person
+            is wearing and identify it in real time.
         </p>
         <p>
-            This project benefits fashion shoppers, streetwear fans, and online stores looking
-            to create personalized shopping experiences.
+            This project benefits online shoppers, streetwear fans, and fashion brands that want
+            to offer personalized shopping experiences.
         </p>
     </div>
 
@@ -110,12 +110,12 @@
     <div class="card">
         <h2>How to Use</h2>
         <ol>
-            <li>Click <strong>Start</strong> to enable your webcam.</li>
-            <li>Wear a hat (or no hat) and face the camera.</li>
-            <li>The AI will detect your hat if confidence is high enough.</li>
+            <li>Click <strong>Start</strong> to turn on your webcam.</li>
+            <li>Wear a baseball cap, bucket hat, cowboy hat, or no hat.</li>
+            <li>If the model is at least 60% confident, it will identify the hat.</li>
         </ol>
 
-        <button onclick="init()">Start</button>
+        <button type="button" onclick="init()">Start</button>
 
         <div id="webcam-container"></div>
         <div id="label-container"></div>
@@ -134,8 +134,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-<script>
+<script type="text/javascript">
     const URL = "./my_model/";
+
     let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
@@ -145,7 +146,8 @@
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        webcam = new tmImage.Webcam(300, 300, true);
+        const flip = true;
+        webcam = new tmImage.Webcam(200, 200, flip);
         await webcam.setup();
         await webcam.play();
         window.requestAnimationFrame(loop);
@@ -166,13 +168,13 @@
     }
 
     async function predict() {
-        const predictions = await model.predict(webcam.canvas);
+        const prediction = await model.predict(webcam.canvas);
 
         let bestClass = "";
         let bestProb = 0;
 
-        for (let i = 0; i < predictions.length; i++) {
-            const p = predictions[i];
+        for (let i = 0; i < maxPredictions; i++) {
+            const p = prediction[i];
             labelContainer.childNodes[i].innerHTML =
                 `${p.className}: ${p.probability.toFixed(2)}`;
 
@@ -192,7 +194,7 @@
         } else {
             resultBox.innerHTML = `
                 <h3>Detection Result</h3>
-                <p>Not confident yet. Try better lighting or move closer.</p>
+                <p>Not confident enough. Try better lighting or move closer.</p>
             `;
         }
     }
