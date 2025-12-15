@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>HatVision — AI Hat Detector</title>
+    <title>HatVision — AI Hat Style Detector</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -39,7 +41,7 @@
             border: 1px solid #2a2a2a;
         }
 
-        h2 {
+        h2, h3 {
             margin-top: 0;
         }
 
@@ -58,16 +60,18 @@
             background: #0052cc;
         }
 
-        #webcam-container {
-            margin-top: 15px;
+        #webcam-container canvas {
+            border-radius: 10px;
+            border: 1px solid #333;
         }
 
         #label-container > div {
             background: #111;
             padding: 8px;
-            margin: 5px 0;
+            margin: 6px 0;
             border-radius: 6px;
             border: 1px solid #333;
+            font-size: 14px;
         }
 
         .suggestion-box {
@@ -81,59 +85,60 @@
 </head>
 
 <body>
+
 <header>HatVision — AI Hat Style Detector</header>
 
 <div class="container">
 
-    <!-- What the project does -->
+    <!-- About -->
     <div class="section">
         <h2>About the Project</h2>
         <p>
-            HatVision uses a Teachable Machine model to analyze your hat in real time. 
-            It detects what type of hat you're wearing — such as a baseball cap, bucket hat, cowboy hat, fedora, or beanie — 
-            and then suggests similar styles that you might like.
+            HatVision uses a Teachable Machine image model to analyze your webcam feed in real time.
+            It detects the type of hat you are wearing and provides a clear description of that style.
         </p>
         <p>
-            This tool is useful for shoppers, fashion enthusiasts, and online stores looking to provide 
-            personalized accessory recommendations.
+            This project demonstrates real-time computer vision, AI classification,
+            and interactive user feedback using TensorFlow.js.
         </p>
     </div>
 
-    <!-- Instructions -->
+    <!-- AI Model Section -->
     <div class="section">
-        <h2>How to Use</h2>
-        <ul>
-            <li>Click <b>Start</b> to enable your webcam.</li>
-            <li>Look at the camera while wearing a hat OR with no hat.</li>
-            <li>The AI will classify your hat and recommend similar styles.</li>
-        </ul>
-        <button onclick="init()">Start</button>
+        <h2>Teachable Machine Image Model</h2>
+
+        <button type="button" onclick="init()">Start</button>
+
         <div id="webcam-container"></div>
         <div id="label-container"></div>
 
         <div id="suggestions" class="suggestion-box">
-            <h3>Hat Suggestions Will Appear Here</h3>
+            <h3>Category Description</h3>
+            <p id="category-description">
+                Start the camera to see the detected category and its description.
+            </p>
         </div>
     </div>
 
 </div>
 
-
 <!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-<script>
+<script type="text/javascript">
     const URL = "./my_model/";
+
     let model, webcam, labelContainer, maxPredictions;
 
-    const hatSuggestions = {
-        "baseball caps": "You seem to like casual sporty styles. You might also enjoy snapbacks, curved-brim streetwear caps, or athletic performance hats.",
-        "Bucket hat": "Bucket hats are great for sun protection and style. You might also like fisherman hats or wide-brim summer hats.",
-        "Cowboy hat": "Classic Western look! You may also enjoy rancher hats, outback hats, or Western-style fedoras.",
-        "Fedora": "A stylish choice! Similar options include trilby hats, pork pie hats, or wide-brim dress hats.",
-        "Beanies": "Cozy and casual! You might also like cuffed beanies, slouch beanies, or knit skull caps.",
-        "no hat": "You're not wearing a hat — try putting one on to get style recommendations!"
+    // Descriptions for each trained category
+    const categoryDescriptions = {
+        "baseball caps": "A casual, sporty hat with a curved brim, commonly worn for everyday activities and outdoor sports.",
+        "Bucket hat": "A soft hat with a downward-sloping brim, popular for sun protection and streetwear fashion.",
+        "Cowboy hat": "A wide-brimmed hat traditionally associated with Western culture, offering both style and function.",
+        "Fedora": "A structured felt hat with a pinched crown, often worn for formal or smart-casual outfits.",
+        "Beanies": "A snug, knit hat designed to keep your head warm in colder weather.",
+        "no hat": "No hat detected. Try wearing a hat in front of the camera to see style information."
     };
 
     async function init() {
@@ -148,9 +153,11 @@
         await webcam.play();
         window.requestAnimationFrame(loop);
 
+        document.getElementById("webcam-container").innerHTML = "";
         document.getElementById("webcam-container").appendChild(webcam.canvas);
 
         labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
         for (let i = 0; i < maxPredictions; i++) {
             labelContainer.appendChild(document.createElement("div"));
         }
@@ -163,14 +170,15 @@
     }
 
     async function predict() {
-        const predictions = await model.predict(webcam.canvas);
-        
-        let bestClass = null;
+        const prediction = await model.predict(webcam.canvas);
+
+        let bestClass = "";
         let bestProb = 0;
 
         for (let i = 0; i < maxPredictions; i++) {
-            const p = predictions[i];
-            labelContainer.childNodes[i].innerHTML = `${p.className}: ${p.probability.toFixed(2)}`;
+            const p = prediction[i];
+            labelContainer.childNodes[i].innerHTML =
+                `${p.className}: ${p.probability.toFixed(2)}`;
 
             if (p.probability > bestProb) {
                 bestProb = p.probability;
@@ -178,9 +186,8 @@
             }
         }
 
-        // Show suggestions
-        document.getElementById("suggestions").innerHTML =
-            "<h3>Suggestions</h3><p>" + hatSuggestions[bestClass] + "</p>";
+        document.getElementById("category-description").innerText =
+            categoryDescriptions[bestClass] || "No description available.";
     }
 </script>
 
